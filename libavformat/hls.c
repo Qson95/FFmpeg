@@ -690,7 +690,7 @@ static int parse_playlist(HLSContext *c, const char *url,
     int ret = 0, is_segment = 0, is_variant = 0;
     int64_t duration = 0;
     enum KeyType key_type = KEY_NONE;
-    uint8_t iv[16] = "";
+    uint8_t iv[32] = "";
     int has_iv = 0;
     char key[MAX_URL_SIZE] = "";
     char line[MAX_URL_SIZE];

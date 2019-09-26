@@ -63,7 +63,7 @@ typedef enum {
     CODEC_ATTRIBUTE_WILL_NOT_BE_WRITTEN,
 } CodecAttributeStatus;
 
-#define KEYSIZE 16
+#define KEYSIZE 32
 #define LINE_BUFFER_SIZE 1024
 #define HLS_MICROSECOND_UNIT   1000000
 #define POSTFIX_PATTERN "_%d"
