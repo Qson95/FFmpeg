@@ -373,7 +373,7 @@ static void handle_variant_args(struct variant_info *info, const char *key,
 struct key_info {
      char uri[MAX_URL_SIZE];
      char method[11];
-     char iv[35];
+     char iv[67];
 };
 
 static void handle_key_args(struct key_info *info, const char *key,
@@ -393,7 +393,7 @@ static void handle_key_args(struct key_info *info, const char *key,
 
 struct init_section_info {
     char uri[MAX_URL_SIZE];
-    char byterange[32];
+    char byterange[64];
 };
 
 static struct segment *new_init_section(struct playlist *pls,
@@ -780,6 +780,8 @@ static int parse_playlist(HLSContext *c, const char *url,
                 has_iv = 1;
             }
             av_strlcpy(key, info.uri, sizeof(key));
+            av_log(c->ctx, AV_LOG_ERROR, "1 KeyInfo url %s\n", key);
+            av_log(c->ctx, AV_LOG_ERROR, "2 IV key %s %d\n", iv, strlen(iv));
         } else if (av_strstart(line, "#EXT-X-MEDIA:", &ptr)) {
             struct rendition_info info = {{0}};
             ff_parse_key_value(ptr, (ff_parse_key_val_cb) handle_rendition_args,
@@ -1196,11 +1198,13 @@ static int open_input(HLSContext *c, struct playlist *pls, struct segment *seg, 
     if (seg->key_type == KEY_NONE) {
         ret = open_url(pls->parent, in, seg->url, c->avio_opts, opts, &is_http);
     } else if (seg->key_type == KEY_AES_128) {
-        char iv[33], key[33], url[MAX_URL_SIZE];
+        char iv[65], key[65], url[MAX_URL_SIZE];
         if (strcmp(seg->key, pls->key_url)) {
             AVIOContext *pb = NULL;
+            av_log(pls->parent, AV_LOG_VERBOSE, "Segment key %s\n", seg->key);
             if (open_url(pls->parent, &pb, seg->key, c->avio_opts, opts, NULL) == 0) {
                 ret = avio_read(pb, pls->key, sizeof(pls->key));
+                av_log(pls->parent, AV_LOG_VERBOSE, "Playlist key %s len %d\n", pls->key, strlen(pls->key));
                 if (ret != sizeof(pls->key)) {
                     av_log(NULL, AV_LOG_ERROR, "Unable to read key file %s\n",
                            seg->key);
@@ -1214,11 +1218,14 @@ static int open_input(HLSContext *c, struct playlist *pls, struct segment *seg, 
         }
         ff_data_to_hex(iv, seg->iv, sizeof(seg->iv), 0);
         ff_data_to_hex(key, pls->key, sizeof(pls->key), 0);
-        iv[32] = key[32] = '\0';
+        iv[64] = key[64] = '\0';
         if (strstr(seg->url, "://"))
             snprintf(url, sizeof(url), "crypto+%s", seg->url);
         else
             snprintf(url, sizeof(url), "crypto:%s", seg->url);
+
+        av_log(pls->parent, AV_LOG_VERBOSE, "key %s\n", key);
+        av_log(pls->parent, AV_LOG_VERBOSE, "iv %s\n", iv);
 
         av_dict_set(&opts, "key", key, 0);
         av_dict_set(&opts, "iv", iv, 0);

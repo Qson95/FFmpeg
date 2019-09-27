@@ -575,7 +575,7 @@ static int do_encrypt(AVFormatContext *s, VariantStream *vs)
 
     if (!*hls->iv_string) {
         uint8_t iv[32] = { 0 };
-        char buf[33];
+        char buf[65];
 
         if (!hls->iv) {
             AV_WB64(iv + 8, vs->sequence);
@@ -583,7 +583,7 @@ static int do_encrypt(AVFormatContext *s, VariantStream *vs)
             memcpy(iv, hls->iv, sizeof(iv));
         }
         ff_data_to_hex(buf, iv, sizeof(iv), 0);
-        buf[32] = '\0';
+        buf[64] = '\0';
         memcpy(hls->iv_string, buf, sizeof(hls->iv_string));
     }
 
@@ -1577,6 +1577,8 @@ static int hls_start(AVFormatContext *s, VariantStream *vs)
             }
             c->encrypt_started = 1;
         }
+        av_log(s, AV_LOG_WARNING, "Key String %s %d\n", c->key_string, strlen(c->key_string));
+        av_log(s, AV_LOG_WARNING, "IV String %s %d\n", c->iv_string, strlen(c->iv_string));
         if ((err = av_dict_set(&options, "encryption_key", c->key_string, 0))
                 < 0)
             goto fail;
