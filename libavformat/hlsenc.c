@@ -1597,8 +1597,8 @@ static int hls_start(AVFormatContext *s, VariantStream *vs)
             }
             c->encrypt_started = 1;
         }
-        av_log(s, AV_LOG_WARNING, "Key String %s %d\n", c->key_string, strlen(c->key_string));
-        av_log(s, AV_LOG_WARNING, "IV String %s %d\n", c->iv_string, strlen(c->iv_string));
+        av_log(s, AV_LOG_INFO, "Key String %s %d\n", c->key_string, strlen(c->key_string));
+        av_log(s, AV_LOG_INFO, "IV String %s %d\n", c->iv_string, strlen(c->iv_string));
         if ((err = av_dict_set(&options, "encryption_key", c->key_string, 0))
                 < 0)
             goto fail;
@@ -1609,11 +1609,11 @@ static int hls_start(AVFormatContext *s, VariantStream *vs)
            goto fail;
         
         if (strlen(c->key_string) == 32) {
-            av_log(s, AV_LOG_WARNING, "encryption_method: AES-128\n");
+            av_log(s, AV_LOG_INFO, "encryption_method: AES-128\n");
             if ((err = av_dict_set(&options, "encryption_method", "AES-128", 0)) < 0)
                 goto fail;
         } else if (strlen(c->key_string) == 64) {
-            av_log(s, AV_LOG_WARNING, "encryption_method: AES-256\n");
+            av_log(s, AV_LOG_INFO, "encryption_method: AES-256\n");
             if ((err = av_dict_set(&options, "encryption_method", "AES-256", 0)) < 0)
                 goto fail;
         } else {

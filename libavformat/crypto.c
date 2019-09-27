@@ -28,14 +28,19 @@
 
 // encourage reads of 4096 bytes - 1 block is always retained.
 #define MAX_BUFFER_BLOCKS 257
-#define BLOCKSIZE 32
-#define BLOCKSIZE_IV 16
+#define KEYSIZE_AES_128 16
+#define KEYSIZE_AES_256 32
+
+#define IVSIZE_AES      16
+#define BLOCKSIZE_AES   16
+
+int key_type = 0;// 0 is AES_128 else AES_256
 
 typedef struct CryptoContext {
     const AVClass *class;
     URLContext *hd;
-    uint8_t inbuffer [BLOCKSIZE*MAX_BUFFER_BLOCKS],
-            outbuffer[BLOCKSIZE*MAX_BUFFER_BLOCKS];
+    uint8_t inbuffer [KEYSIZE_AES_256*MAX_BUFFER_BLOCKS],
+            outbuffer[KEYSIZE_AES_256*MAX_BUFFER_BLOCKS];
     uint8_t *outptr;
     int indata, indata_used, outdata;
     int64_t position;  // position in file - used in seek
@@ -52,13 +57,12 @@ typedef struct CryptoContext {
     uint8_t *encrypt_key;
     int encrypt_keylen;
     uint8_t *encrypt_iv;
-    uint8_t *encrypt_method;
     int encrypt_ivlen;
     struct AVAES *aes_decrypt;
     struct AVAES *aes_encrypt;
     uint8_t *write_buf;
     unsigned int write_buf_size;
-    uint8_t pad[BLOCKSIZE];
+    uint8_t pad[KEYSIZE_AES_256];
     int pad_len;
 } CryptoContext;
 
@@ -72,7 +76,6 @@ static const AVOption options[] = {
     {"decryption_iv",  "AES decryption initialization vector", OFFSET(decrypt_iv),  AV_OPT_TYPE_BINARY, .flags = D },
     {"encryption_key", "AES encryption key",                   OFFSET(encrypt_key), AV_OPT_TYPE_BINARY, .flags = E },
     {"encryption_iv",  "AES encryption initialization vector", OFFSET(encrypt_iv),  AV_OPT_TYPE_BINARY, .flags = E },
-    {"encryption_method", "AES encryption method",             OFFSET(encrypt_method), AV_OPT_TYPE_BINARY, .flags = D|E },
     { NULL }
 };
 
@@ -87,24 +90,31 @@ static int set_aes_arg(URLContext *h, uint8_t **buf, int *buf_len,
                        uint8_t *default_buf, int default_buf_len,
                        const char *desc)
 {
+    int key_size = KEYSIZE_AES_128;
+    if (*buf_len && *buf_len == KEYSIZE_AES_256) {
+        key_size = KEYSIZE_AES_256;
+    } else if (default_buf_len == KEYSIZE_AES_256) {
+        key_size = KEYSIZE_AES_256;
+    }
+    
     if (!*buf_len) {
         if (!default_buf_len) {
             av_log(h, AV_LOG_ERROR, "%s not set\n", desc);
             return AVERROR(EINVAL);
-        } else if (default_buf_len != BLOCKSIZE) {
+        } else if (default_buf_len != key_size) {
             av_log(h, AV_LOG_ERROR,
                    "invalid %s size (%d bytes, block size is %d)\n",
-                   desc, default_buf_len, BLOCKSIZE);
+                   desc, default_buf_len, key_size);
             return AVERROR(EINVAL);
         }
         *buf = av_memdup(default_buf, default_buf_len);
         if (!*buf)
             return AVERROR(ENOMEM);
         *buf_len = default_buf_len;
-    } else if (*buf_len != BLOCKSIZE) {
+    } else if (*buf_len != key_size) {
         av_log(h, AV_LOG_ERROR,
                "invalid %s size (%d bytes, block size is %d)\n",
-               desc, *buf_len, BLOCKSIZE);
+               desc, *buf_len, key_size);
         return AVERROR(EINVAL);
     }
     return 0;
@@ -118,20 +128,20 @@ static int set_aes_arg_iv(URLContext *h, uint8_t **buf, int *buf_len,
         if (!default_buf_len) {
             av_log(h, AV_LOG_ERROR, "%s not set\n", desc);
             return AVERROR(EINVAL);
-        } else if (default_buf_len != BLOCKSIZE_IV) {
+        } else if (default_buf_len != IVSIZE_AES) {
             av_log(h, AV_LOG_ERROR,
                    "invalid %s size (%d bytes, block size is %d)\n",
-                   desc, default_buf_len, BLOCKSIZE_IV);
+                   desc, default_buf_len, IVSIZE_AES);
             return AVERROR(EINVAL);
         }
         *buf = av_memdup(default_buf, default_buf_len);
         if (!*buf)
             return AVERROR(ENOMEM);
         *buf_len = default_buf_len;
-    } else if (*buf_len != BLOCKSIZE_IV) {
+    } else if (*buf_len != IVSIZE_AES) {
         av_log(h, AV_LOG_ERROR,
                "invalid %s size (%d bytes, block size is %d)\n",
-               desc, *buf_len, BLOCKSIZE_IV);
+               desc, *buf_len, IVSIZE_AES);
         return AVERROR(EINVAL);
     }
     return 0;
@@ -144,6 +154,39 @@ static int crypto_open2(URLContext *h, const char *uri, int flags, AVDictionary 
     CryptoContext *c = h->priv_data;
     c->flags = flags;
 
+    AVDictionaryEntry *t = NULL;
+    t = av_dict_get(*options, "encryption_method", t, 0);
+    if (t != NULL) {
+        if (strcmp(t->value, "AES-256") == 0) {
+            av_log(h, AV_LOG_INFO, "encryption_method AES-256\n");
+
+            c->keylen = KEYSIZE_AES_256;
+            if (c->encrypt_keylen != NULL)
+                c->encrypt_keylen = KEYSIZE_AES_256;
+
+            if (c->decrypt_keylen != NULL)
+                c->decrypt_keylen = KEYSIZE_AES_256;
+        } else {
+            av_log(h, AV_LOG_INFO, "encryption_method AES-128\n");
+
+            c->keylen = KEYSIZE_AES_128;
+            if (c->encrypt_keylen != NULL)
+                c->encrypt_keylen = KEYSIZE_AES_128;
+
+            if (c->decrypt_keylen != NULL)
+                c->decrypt_keylen = KEYSIZE_AES_128;
+        }
+    } else {
+        av_log(h, AV_LOG_INFO, "encryption_method: default AES-128 \n");
+
+        c->keylen = KEYSIZE_AES_128;
+            if (c->encrypt_keylen != NULL)
+                c->encrypt_keylen = KEYSIZE_AES_128;
+
+            if (c->decrypt_keylen != NULL)
+                c->decrypt_keylen = KEYSIZE_AES_128;
+    }
+
     if (!av_strstart(uri, "crypto+", &nested_url) &&
         !av_strstart(uri, "crypto:", &nested_url)) {
         av_log(h, AV_LOG_ERROR, "Unsupported url %s\n", uri);
@@ -152,21 +195,24 @@ static int crypto_open2(URLContext *h, const char *uri, int flags, AVDictionary 
     }
     
     if (flags & AVIO_FLAG_READ) {
-        av_log(h, AV_LOG_ERROR, "AVIO_FLAG_READ\n");
+        av_log(h, AV_LOG_INFO, "AVIO_FLAG_READ\n");
         if ((ret = set_aes_arg(h, &c->decrypt_key, &c->decrypt_keylen,
                                c->key, c->keylen, "decryption key")) < 0)
             goto err;
+        av_log(h, AV_LOG_INFO, "AVIO_FLAG_READ\n");    
         if ((ret = set_aes_arg_iv(h, &c->decrypt_iv, &c->decrypt_ivlen,
                                c->iv, c->ivlen, "decryption IV")) < 0)
             goto err;
     }
 
     if (flags & AVIO_FLAG_WRITE) {
-        av_log(h, AV_LOG_ERROR, "AVIO_FLAG_WRITE\n");
+        av_log(h, AV_LOG_INFO, "AVIO_FLAG_WRITE\n");
         if ((ret = set_aes_arg(h, &c->encrypt_key, &c->encrypt_keylen,
                                c->key, c->keylen, "encryption key")) < 0)
-        if (ret < 0)
             goto err;
+
+        av_log(h, AV_LOG_INFO, "AVIO_FLAG_WRITE\n");
+
         if ((ret = set_aes_arg_iv(h, &c->encrypt_iv, &c->encrypt_ivlen,
                                c->iv, c->ivlen, "encryption IV")) < 0)
             goto err;
@@ -185,7 +231,12 @@ static int crypto_open2(URLContext *h, const char *uri, int flags, AVDictionary 
             ret = AVERROR(ENOMEM);
             goto err;
         }
-        ret = av_aes_init(c->aes_decrypt, c->decrypt_key, BLOCKSIZE * 8, 1);
+
+        if (c->keylen == KEYSIZE_AES_256) {
+            ret = av_aes_init(c->aes_decrypt, c->decrypt_key, KEYSIZE_AES_256 * 8, 1);
+        } else {
+            ret = av_aes_init(c->aes_decrypt, c->decrypt_key, KEYSIZE_AES_128 * 8, 1);
+        }
         if (ret < 0)
             goto err;
 
@@ -200,7 +251,11 @@ static int crypto_open2(URLContext *h, const char *uri, int flags, AVDictionary 
             ret = AVERROR(ENOMEM);
             goto err;
         }
-        ret = av_aes_init(c->aes_encrypt, c->encrypt_key, BLOCKSIZE * 8, 0);
+        if (c->keylen == KEYSIZE_AES_256) {
+            ret = av_aes_init(c->aes_encrypt, c->encrypt_key, KEYSIZE_AES_256 * 8, 0);
+        } else {
+            ret = av_aes_init(c->aes_encrypt, c->encrypt_key, KEYSIZE_AES_128 * 8, 0);
+        }
         if (ret < 0)
             goto err;
         // for write, we must be streamed
@@ -229,7 +284,11 @@ retry:
     // since we'll remove PKCS7 padding at the end. So make
     // sure we've got at least 2 blocks, so we can decrypt
     // at least one.
-    while (c->indata - c->indata_used < 2*BLOCKSIZE) {
+    int key_size = KEYSIZE_AES_128;
+    if (c->keylen == KEYSIZE_AES_256) {
+        key_size = KEYSIZE_AES_256;
+    }
+    while (c->indata - c->indata_used < 2*key_size) {
         int n = ffurl_read(c->hd, c->inbuffer + c->indata,
                            sizeof(c->inbuffer) - c->indata);
         if (n <= 0) {
@@ -238,16 +297,16 @@ retry:
         }
         c->indata += n;
     }
-    blocks = (c->indata - c->indata_used) / (BLOCKSIZE / 2);
+    blocks = (c->indata - c->indata_used) / BLOCKSIZE_AES;
     if (!blocks)
         return AVERROR_EOF;
     if (!c->eof)
         blocks--;
     av_aes_crypt(c->aes_decrypt, c->outbuffer, c->inbuffer + c->indata_used,
                  blocks, c->decrypt_iv, 1);
-    c->outdata      = (BLOCKSIZE / 2) * blocks;
+    c->outdata      = BLOCKSIZE_AES * blocks;
     c->outptr       = c->outbuffer;
-    c->indata_used += (BLOCKSIZE / 2) * blocks;
+    c->indata_used += BLOCKSIZE_AES * blocks;
     if (c->indata_used >= sizeof(c->inbuffer)/2) {
         memmove(c->inbuffer, c->inbuffer + c->indata_used,
                 c->indata - c->indata_used);
@@ -312,7 +371,7 @@ static int64_t crypto_seek(URLContext *h, int64_t pos, int whence)
 
     // identify the block containing the IV for the
     // next block we will decrypt
-    block = pos/(BLOCKSIZE / 2);
+    block = pos/BLOCKSIZE_AES;
     if (block == 0) {
         // restore the iv to the seed one - this is the iv for the FIRST block
         memcpy( c->decrypt_iv, c->iv, c->ivlen );
@@ -323,7 +382,7 @@ static int64_t crypto_seek(URLContext *h, int64_t pos, int whence)
         // note that the DECRYPTED result will not be correct,
         // but will be discarded
         block--;
-        c->position = (block * (BLOCKSIZE / 2));
+        c->position = (block * BLOCKSIZE_AES);
     }
 
     newpos = ffurl_seek( c->hd, c->position, SEEK_SET );
@@ -336,7 +395,7 @@ static int64_t crypto_seek(URLContext *h, int64_t pos, int whence)
     // read and discard from here up to required position
     // (which will set the iv correctly to it).
     if (pos - c->position) {
-        uint8_t buff[(BLOCKSIZE / 2)*2]; // maximum size of pos-c->position
+        uint8_t buff[BLOCKSIZE_AES*2]; // maximum size of pos-c->position
         int len = pos - c->position;
         int res;
 
@@ -369,9 +428,9 @@ static int crypto_write(URLContext *h, const unsigned char *buf, int size)
     int ret = 0;
 
     total_size = size + c->pad_len;
-    pad_len = total_size % (BLOCKSIZE / 2);
+    pad_len = total_size % BLOCKSIZE_AES;
     out_size = total_size - pad_len;
-    blocks = out_size / (BLOCKSIZE / 2);
+    blocks = out_size / BLOCKSIZE_AES;
 
     if (out_size) {
         av_fast_malloc(&c->write_buf, &c->write_buf_size, out_size);
@@ -380,14 +439,14 @@ static int crypto_write(URLContext *h, const unsigned char *buf, int size)
             return AVERROR(ENOMEM);
 
         if (c->pad_len) {
-            memcpy(&c->pad[c->pad_len], buf, (BLOCKSIZE / 2) - c->pad_len);
+            memcpy(&c->pad[c->pad_len], buf, BLOCKSIZE_AES- c->pad_len);
             av_aes_crypt(c->aes_encrypt, c->write_buf, c->pad, 1, c->encrypt_iv, 0);
             blocks--;
         }
 
         av_aes_crypt(c->aes_encrypt,
-                     &c->write_buf[c->pad_len ? (BLOCKSIZE / 2) : 0],
-                     &buf[c->pad_len ? (BLOCKSIZE / 2) - c->pad_len : 0],
+                     &c->write_buf[c->pad_len ? BLOCKSIZE_AES : 0],
+                     &buf[c->pad_len ? BLOCKSIZE_AES - c->pad_len : 0],
                      blocks, c->encrypt_iv, 0);
 
         ret = ffurl_write(c->hd, c->write_buf, out_size);
@@ -409,12 +468,12 @@ static int crypto_close(URLContext *h)
     int ret = 0;
 
     if (c->aes_encrypt) {
-        uint8_t out_buf[(BLOCKSIZE / 2)];
-        int pad = (BLOCKSIZE / 2) - c->pad_len;
+        uint8_t out_buf[BLOCKSIZE_AES];
+        int pad = BLOCKSIZE_AES - c->pad_len;
 
         memset(&c->pad[c->pad_len], pad, pad);
         av_aes_crypt(c->aes_encrypt, out_buf, c->pad, 1, c->encrypt_iv, 0);
-        ret = ffurl_write(c->hd, out_buf, (BLOCKSIZE / 2));
+        ret = ffurl_write(c->hd, out_buf, BLOCKSIZE_AES);
     }
 
     if (c->hd)

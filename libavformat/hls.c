@@ -772,10 +772,15 @@ static int parse_playlist(HLSContext *c, const char *url,
                                &info);
             key_type = KEY_NONE;
             has_iv = 0;
-            if (!strcmp(info.method, "AES-128"))
+            if (!strcmp(info.method, "AES-128")) {
                 key_type = KEY_AES_128;
-            if (!strcmp(info.method, "AES-256"))
+                av_log(c->ctx, AV_LOG_INFO, "KEY TYPE: KEY_AES_128\n");
+            }
+            if (!strcmp(info.method, "AES-256")) {
+                av_log(c->ctx, AV_LOG_INFO, "KEY TYPE: KEY_AES_256\n");
                 key_type = KEY_AES_256;    
+            }
+
             if (!strcmp(info.method, "SAMPLE-AES"))
                 key_type = KEY_SAMPLE_AES;
             if (!strncmp(info.iv, "0x", 2) || !strncmp(info.iv, "0X", 2)) {
@@ -783,8 +788,8 @@ static int parse_playlist(HLSContext *c, const char *url,
                 has_iv = 1;
             }
             av_strlcpy(key, info.uri, sizeof(key));
-            av_log(c->ctx, AV_LOG_ERROR, "1 KeyInfo url %s\n", key);
-            av_log(c->ctx, AV_LOG_ERROR, "2 IV key %s %d\n", iv, strlen(iv));
+            av_log(c->ctx, AV_LOG_INFO, "1 KeyInfo url %s\n", key);
+            av_log(c->ctx, AV_LOG_INFO, "2 IV key %s %d\n", iv, strlen(iv));
         } else if (av_strstart(line, "#EXT-X-MEDIA:", &ptr)) {
             struct rendition_info info = {{0}};
             ff_parse_key_value(ptr, (ff_parse_key_val_cb) handle_rendition_args,
@@ -1227,12 +1232,13 @@ static int open_input(HLSContext *c, struct playlist *pls, struct segment *seg, 
         else
             snprintf(url, sizeof(url), "crypto:%s", seg->url);
 
-        av_log(pls->parent, AV_LOG_VERBOSE, "key %s\n", key);
-        av_log(pls->parent, AV_LOG_VERBOSE, "iv %s\n", iv);
+        av_log(pls->parent, AV_LOG_INFO, "key %s\n", key);
+        av_log(pls->parent, AV_LOG_INFO, "iv %s\n", iv);
+        av_log(pls->parent, AV_LOG_INFO, "encryption_method AES-128\n");
 
         av_dict_set(&opts, "key", key, 0);
         av_dict_set(&opts, "iv", iv, 0);
-        av_dict_set(&opts, "encryption_method", "AES_128", 0);
+        av_dict_set(&opts, "encryption_method", "AES-128", 0);
 
         ret = open_url(pls->parent, in, url, c->avio_opts, opts, &is_http);
         if (ret < 0) {
@@ -1266,12 +1272,13 @@ static int open_input(HLSContext *c, struct playlist *pls, struct segment *seg, 
         else
             snprintf(url, sizeof(url), "crypto:%s", seg->url);
 
-        av_log(pls->parent, AV_LOG_VERBOSE, "key %s\n", key);
-        av_log(pls->parent, AV_LOG_VERBOSE, "iv %s\n", iv);
+        av_log(pls->parent, AV_LOG_INFO, "key %s\n", key);
+        av_log(pls->parent, AV_LOG_INFO, "iv %s\n", iv);
+        av_log(pls->parent, AV_LOG_INFO, "encryption_method AES-256\n");
 
         av_dict_set(&opts, "key", key, 0);
         av_dict_set(&opts, "iv", iv, 0);
-        av_dict_set(&opts, "encryption_method", "AES_256", 0);
+        av_dict_set(&opts, "encryption_method", "AES-256", 0);
 
         ret = open_url(pls->parent, in, url, c->avio_opts, opts, &is_http);
         if (ret < 0) {
