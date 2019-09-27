@@ -52,6 +52,7 @@ typedef struct CryptoContext {
     uint8_t *encrypt_key;
     int encrypt_keylen;
     uint8_t *encrypt_iv;
+    uint8_t *encrypt_method;
     int encrypt_ivlen;
     struct AVAES *aes_decrypt;
     struct AVAES *aes_encrypt;
@@ -71,6 +72,7 @@ static const AVOption options[] = {
     {"decryption_iv",  "AES decryption initialization vector", OFFSET(decrypt_iv),  AV_OPT_TYPE_BINARY, .flags = D },
     {"encryption_key", "AES encryption key",                   OFFSET(encrypt_key), AV_OPT_TYPE_BINARY, .flags = E },
     {"encryption_iv",  "AES encryption initialization vector", OFFSET(encrypt_iv),  AV_OPT_TYPE_BINARY, .flags = E },
+    {"encryption_method", "AES encryption method",             OFFSET(encrypt_method), AV_OPT_TYPE_BINARY, .flags = D|E },
     { NULL }
 };
 
@@ -149,18 +151,6 @@ static int crypto_open2(URLContext *h, const char *uri, int flags, AVDictionary 
         goto err;
     }
     
-    av_log(h, AV_LOG_ERROR, "0 Unsupported url %s\n", uri);
-    av_log(h, AV_LOG_ERROR, "1 c->decrypt_key %s\n", c->decrypt_key);
-    av_log(h, AV_LOG_ERROR, "2 c->decrypt_keylen %d\n", c->decrypt_keylen);
-    av_log(h, AV_LOG_ERROR, "3  c->encrypt_key %s\n", c->encrypt_key);
-    av_log(h, AV_LOG_ERROR, "4 c->encrypt_keylen %d\n", c->encrypt_keylen);
-    // av_log(h, AV_LOG_ERROR, "5 c->encrypt_iv %s %d\n", c->encrypt_iv, strlen(c->encrypt_iv));
-    // av_log(h, AV_LOG_ERROR, "6 c->encrypt_ivlen %d\n", c->encrypt_ivlen);
-    av_log(h, AV_LOG_ERROR, "5 c->iv %s\n", c->iv);
-    av_log(h, AV_LOG_ERROR, "6 c->ivlen %d\n", c->ivlen);
-    av_log(h, AV_LOG_ERROR, "7 c->key %s\n", c->key);
-    av_log(h, AV_LOG_ERROR, "8 c->keylen %d\n", c->keylen);
-
     if (flags & AVIO_FLAG_READ) {
         av_log(h, AV_LOG_ERROR, "AVIO_FLAG_READ\n");
         if ((ret = set_aes_arg(h, &c->decrypt_key, &c->decrypt_keylen,
@@ -181,19 +171,6 @@ static int crypto_open2(URLContext *h, const char *uri, int flags, AVDictionary 
                                c->iv, c->ivlen, "encryption IV")) < 0)
             goto err;
     }
-
-    av_log(h, AV_LOG_ERROR, "0 ============================\n");
-    av_log(h, AV_LOG_ERROR, "1 c->decrypt_key %s\n", c->decrypt_key);
-    av_log(h, AV_LOG_ERROR, "2 c->decrypt_keylen %d\n", c->decrypt_keylen);
-    av_log(h, AV_LOG_ERROR, "3  c->encrypt_key %s\n", c->encrypt_key);
-    av_log(h, AV_LOG_ERROR, "4 c->encrypt_keylen %d\n", c->encrypt_keylen);
-    av_log(h, AV_LOG_ERROR, "5 c->encrypt_iv %s\n", c->encrypt_iv);
-    av_log(h, AV_LOG_ERROR, "6 c->encrypt_ivlen %d\n", c->encrypt_ivlen);
-    av_log(h, AV_LOG_ERROR, "5 c->iv %s\n", c->iv);
-    av_log(h, AV_LOG_ERROR, "6 c->ivlen %d\n", c->ivlen);
-    av_log(h, AV_LOG_ERROR, "7 c->key %s\n", c->key);
-    av_log(h, AV_LOG_ERROR, "8 c->keylen %d\n", c->keylen);
-    av_log(h, AV_LOG_ERROR, "0 ============================\n");
     
     if ((ret = ffurl_open_whitelist(&c->hd, nested_url, flags,
                                     &h->interrupt_callback, options,
