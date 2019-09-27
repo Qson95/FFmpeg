@@ -72,7 +72,7 @@ struct segment {
     char *url;
     char *key;
     enum KeyType key_type;
-    uint8_t iv[32];
+    uint8_t iv[16];
     /* associated Media Initialization Section, treated as a segment */
     struct segment *init_section;
 };
@@ -373,7 +373,7 @@ static void handle_variant_args(struct variant_info *info, const char *key,
 struct key_info {
      char uri[MAX_URL_SIZE];
      char method[11];
-     char iv[67];
+     char iv[35];
 };
 
 static void handle_key_args(struct key_info *info, const char *key,
@@ -393,7 +393,7 @@ static void handle_key_args(struct key_info *info, const char *key,
 
 struct init_section_info {
     char uri[MAX_URL_SIZE];
-    char byterange[64];
+    char byterange[32];
 };
 
 static struct segment *new_init_section(struct playlist *pls,
@@ -690,7 +690,7 @@ static int parse_playlist(HLSContext *c, const char *url,
     int ret = 0, is_segment = 0, is_variant = 0;
     int64_t duration = 0;
     enum KeyType key_type = KEY_NONE;
-    uint8_t iv[32] = "";
+    uint8_t iv[16] = "";
     int has_iv = 0;
     char key[MAX_URL_SIZE] = "";
     char line[MAX_URL_SIZE];
@@ -1198,7 +1198,7 @@ static int open_input(HLSContext *c, struct playlist *pls, struct segment *seg, 
     if (seg->key_type == KEY_NONE) {
         ret = open_url(pls->parent, in, seg->url, c->avio_opts, opts, &is_http);
     } else if (seg->key_type == KEY_AES_128) {
-        char iv[65], key[65], url[MAX_URL_SIZE];
+        char iv[33], key[65], url[MAX_URL_SIZE];
         if (strcmp(seg->key, pls->key_url)) {
             AVIOContext *pb = NULL;
             av_log(pls->parent, AV_LOG_VERBOSE, "Segment key %s\n", seg->key);
@@ -1218,7 +1218,7 @@ static int open_input(HLSContext *c, struct playlist *pls, struct segment *seg, 
         }
         ff_data_to_hex(iv, seg->iv, sizeof(seg->iv), 0);
         ff_data_to_hex(key, pls->key, sizeof(pls->key), 0);
-        iv[64] = key[64] = '\0';
+        iv[32] = key[64] = '\0';
         if (strstr(seg->url, "://"))
             snprintf(url, sizeof(url), "crypto+%s", seg->url);
         else

@@ -78,7 +78,7 @@ typedef struct HLSSegment {
     unsigned var_stream_idx;
 
     char key_uri[LINE_BUFFER_SIZE + 1];
-    char iv_string[KEYSIZE*2 + 1];
+    char iv_string[KEYSIZE + 1];
 
     struct HLSSegment *next;
 } HLSSegment;
@@ -205,7 +205,7 @@ typedef struct HLSContext {
     char key_file[LINE_BUFFER_SIZE + 1];
     char key_uri[LINE_BUFFER_SIZE + 1];
     char key_string[KEYSIZE*2 + 1];
-    char iv_string[KEYSIZE*2 + 1];
+    char iv_string[KEYSIZE + 1];
     AVDictionary *vtt_format_options;
 
     char *method;
@@ -574,8 +574,8 @@ static int do_encrypt(AVFormatContext *s, VariantStream *vs)
     }
 
     if (!*hls->iv_string) {
-        uint8_t iv[32] = { 0 };
-        char buf[65];
+        uint8_t iv[16] = { 0 };
+        char buf[33];
 
         if (!hls->iv) {
             AV_WB64(iv + 8, vs->sequence);
@@ -583,7 +583,7 @@ static int do_encrypt(AVFormatContext *s, VariantStream *vs)
             memcpy(iv, hls->iv, sizeof(iv));
         }
         ff_data_to_hex(buf, iv, sizeof(iv), 0);
-        buf[64] = '\0';
+        buf[32] = '\0';
         memcpy(hls->iv_string, buf, sizeof(hls->iv_string));
     }
 
@@ -1454,7 +1454,7 @@ static int hls_start(AVFormatContext *s, VariantStream *vs)
     AVDictionary *options = NULL;
     const char *proto = avio_find_protocol_name(s->url);
     int use_temp_file = proto && !strcmp(proto, "file") && (s->flags & HLS_TEMP_FILE);
-    char *filename, iv_string[KEYSIZE*2 + 1];
+    char *filename, iv_string[KEYSIZE + 1];
     int err = 0;
 
     if (c->flags & HLS_SINGLE_FILE) {
