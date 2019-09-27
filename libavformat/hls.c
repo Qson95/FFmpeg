@@ -72,7 +72,7 @@ struct segment {
     char *url;
     char *key;
     enum KeyType key_type;
-    uint8_t iv[16];
+    uint8_t iv[32];
     /* associated Media Initialization Section, treated as a segment */
     struct segment *init_section;
 };
@@ -128,7 +128,7 @@ struct playlist {
     unsigned int init_sec_buf_read_offset;
 
     char key_url[MAX_URL_SIZE];
-    uint8_t key[16];
+    uint8_t key[32];
 
     /* ID3 timestamp handling (elementary audio streams have ID3 timestamps
      * (and possibly other ID3 tags) in the beginning of each segment) */

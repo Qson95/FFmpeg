@@ -574,7 +574,7 @@ static int do_encrypt(AVFormatContext *s, VariantStream *vs)
     }
 
     if (!*hls->iv_string) {
-        uint8_t iv[16] = { 0 };
+        uint8_t iv[32] = { 0 };
         char buf[33];
 
         if (!hls->iv) {
