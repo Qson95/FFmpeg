@@ -630,7 +630,7 @@ static int hls_encryption_start(AVFormatContext *s)
     HLSContext *hls = s->priv_data;
     int ret;
     AVIOContext *pb;
-    uint8_t key[KEYSIZE];
+    uint8_t key[KEYSIZE] = {0};
 
     if ((ret = s->io_open(s, &pb, hls->key_info_file, AVIO_FLAG_READ, NULL)) < 0) {
         av_log(hls, AV_LOG_ERROR,
@@ -666,13 +666,13 @@ static int hls_encryption_start(AVFormatContext *s)
 
     ret = avio_read(pb, key, sizeof(key));
     ff_format_io_close(s, &pb);
-    if (ret != sizeof(key)) {
+    if (ret != sizeof(key) && ret != sizeof(key) / 2) { // only accept key 32 or 16 byte
         av_log(hls, AV_LOG_ERROR, "error reading key file %s\n", hls->key_file);
         if (ret >= 0 || ret == AVERROR_EOF)
             ret = AVERROR(EINVAL);
         return ret;
     }
-    ff_data_to_hex(hls->key_string, key, sizeof(key), 0);
+    ff_data_to_hex(hls->key_string, key, ret, 0);
 
     return 0;
 }
