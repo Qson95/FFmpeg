@@ -1319,7 +1319,7 @@ int avio_close(AVIOContext *s)
     av_freep(&s->opaque);
     av_freep(&s->buffer);
     if (&s->interruptCallback != NULL) {
-        av_log(NULL, AV_LOG_ERROR, "Free interruptCallback\n");
+        av_log(NULL, AV_LOG_INFO, "Free interruptCallback\n");
     }
     av_freep(&s->interruptCallback);
 
