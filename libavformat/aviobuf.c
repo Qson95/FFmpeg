@@ -1299,7 +1299,7 @@ int avio_open2_with_interruptdata(AVIOContext **s, const char *filename, int fla
     int ret = ffio_open_whitelist(s, filename, flags, cb, options, NULL, NULL);
     if (ret != 0)
     {
-        av_freep(&cb);
+        av_free(&cb);
     }
     return ret;
 }
