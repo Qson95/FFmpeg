@@ -1268,7 +1268,7 @@ static int callbackInterrupt(void *data)
             } 
             else 
             {
-                 av_log(NULL, AV_LOG_ERROR, "Live stream hang force close\n",);
+                 av_log(NULL, AV_LOG_ERROR, "Live stream hang force close\n");
             }
             return 1;
         }
