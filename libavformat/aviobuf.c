@@ -1318,10 +1318,8 @@ int avio_close(AVIOContext *s)
 
     av_freep(&s->opaque);
     av_freep(&s->buffer);
-    if (&s->interruptCallback != NULL) {
-        av_log(NULL, AV_LOG_INFO, "Free interruptCallback\n");
-        av_free(s->interruptCallback);
-    }
+    av_log(NULL, AV_LOG_INFO, "Free interruptCallback\n");
+    av_freep(&s->interruptCallback);
 
     if (s->write_flag)
         av_log(s, AV_LOG_VERBOSE, "Statistics: %d seeks, %d writeouts\n", s->seek_count, s->writeout_count);
