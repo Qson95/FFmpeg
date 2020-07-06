@@ -62,7 +62,7 @@ typedef struct AVIOInterruptCB {
 
 typedef struct AVIOInterruptData {
     unsigned int lastTimestamp;
-    char *streamName;
+    char streamName[256];
 } AVIOInterruptData;
 
 

@@ -1263,13 +1263,7 @@ static int callbackInterrupt(void *data)
         unsigned int lastTimestamp = interruptData->lastTimestamp;
         if (timeNow > lastTimestamp && timeNow - lastTimestamp > 30) // 30s
         {
-            if (interruptData->streamName != NULL) {
-                av_log(NULL, AV_LOG_ERROR, "Live stream hang %s force close\n", interruptData->streamName);
-            } 
-            else 
-            {
-                 av_log(NULL, AV_LOG_ERROR, "Live stream hang force close\n");
-            }
+            av_log(NULL, AV_LOG_ERROR, "Live stream hang %s force close\n", interruptData->streamName);
             return 1;
         }
     }
