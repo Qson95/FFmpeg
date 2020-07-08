@@ -149,6 +149,10 @@ AVIOContext *avio_alloc_context(
 
 void avio_context_free(AVIOContext **ps)
 {
+    if ((*ps)->interruptCallback != NULL) {
+        av_log(NULL, AV_LOG_INFO, "Free interruptCallback\n");
+        av_freep(&((*ps)->interruptCallback));
+    }
     av_freep(ps);
 }
 
@@ -1263,7 +1267,11 @@ static int callbackInterrupt(void *data)
         unsigned int lastTimestamp = interruptData->lastTimestamp;
         if (timeNow > lastTimestamp && timeNow - lastTimestamp > 30) // 30s
         {
-            av_log(NULL, AV_LOG_ERROR, "Live stream hang force close\n");
+            if (interruptData->streamName != NULL) {
+                av_log(NULL, AV_LOG_ERROR, "Live stream %s hang force close\n", interruptData->streamName);
+            } else {
+                av_log(NULL, AV_LOG_ERROR, "Live stream hang force close\n");
+            }
             return 1;
         }
     }
@@ -1318,8 +1326,6 @@ int avio_close(AVIOContext *s)
 
     av_freep(&s->opaque);
     av_freep(&s->buffer);
-    av_log(NULL, AV_LOG_INFO, "Free interruptCallback\n");
-    av_freep(&s->interruptCallback);
 
     if (s->write_flag)
         av_log(s, AV_LOG_VERBOSE, "Statistics: %d seeks, %d writeouts\n", s->seek_count, s->writeout_count);
