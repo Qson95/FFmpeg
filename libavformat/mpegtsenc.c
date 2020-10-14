@@ -389,6 +389,12 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
         case AV_CODEC_ID_TIMED_ID3:
             stream_type = STREAM_TYPE_METADATA;
             break;
+        case AV_CODEC_ID_PCM_MULAW:
+            stream_type = 0x91;
+            break;
+        case AV_CODEC_ID_PCM_ALAW:
+            stream_type = 0x90;
+            break;
         default:
             stream_type = STREAM_TYPE_PRIVATE_DATA;
             break;
@@ -1263,7 +1269,9 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
             } else if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
                        (st->codecpar->codec_id == AV_CODEC_ID_MP2 ||
                         st->codecpar->codec_id == AV_CODEC_ID_MP3 ||
-                        st->codecpar->codec_id == AV_CODEC_ID_AAC)) {
+                        st->codecpar->codec_id == AV_CODEC_ID_AAC ||
+                        st->codec->codec_id == AV_CODEC_ID_PCM_MULAW ||
+                        st->codec->codec_id == AV_CODEC_ID_PCM_ALAW)) {
                 *q++ = 0xc0;
             } else if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
                         st->codecpar->codec_id == AV_CODEC_ID_AC3 &&
