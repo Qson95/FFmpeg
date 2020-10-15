@@ -822,8 +822,12 @@ static void mpegts_find_stream_type(AVStream *st,
                 st->codecpar->codec_id   = types->codec_id;
                 st->internal->need_context_update = 1;
             }
-            if (st->codec->codec_id == AV_CODEC_ID_PCM_MULAW || st->codec->codec_id == AV_CODEC_ID_PCM_ALAW)
+            if (st->codecpar->codec_id == AV_CODEC_ID_PCM_MULAW || st->codecpar->codec_id == AV_CODEC_ID_PCM_ALAW)
             {
+                st->codecpar->channels = 1;
+                st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
+                st->codecpar->sample_rate = 8000;
+
                 st->codec->channels = 1;
                 st->codec->channel_layout = AV_CH_LAYOUT_MONO;
                 st->codec->sample_rate = 8000;
