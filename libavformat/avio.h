@@ -358,6 +358,7 @@ typedef struct AVIOContext {
 
     // save interrupt callback for free
     AVIOInterruptCB *interruptCallback;
+    int flagOpenWithInterruptData;
 } AVIOContext;
 
 /**
