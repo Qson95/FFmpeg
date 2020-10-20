@@ -1281,8 +1281,11 @@ static int callbackInterrupt(void *data)
 int avio_open2(AVIOContext **s, const char *filename, int flags,
                const AVIOInterruptCB *int_cb, AVDictionary **options)
 {
-    (*s)->flagOpenWithInterruptData = -1;
-    return ffio_open_whitelist(s, filename, flags, int_cb, options, NULL, NULL);
+    int ret = ffio_open_whitelist(s, filename, flags, int_cb, options, NULL, NULL);
+    if (ret == 0) {
+        (*s)->flagOpenWithInterruptData = -1;
+    }
+    return ret;
 }
 
 int avio_open2_with_interruptdata(AVIOContext **s, const char *filename, int flags,
@@ -1294,7 +1297,6 @@ int avio_open2_with_interruptdata(AVIOContext **s, const char *filename, int fla
         cb = av_malloc(sizeof(AVIOInterruptCB *));
         cb->callback = callbackInterrupt;
         cb->opaque = interruptData;
-        (*s)->flagOpenWithInterruptData = 1;
     }
     else
     {
@@ -1304,6 +1306,8 @@ int avio_open2_with_interruptdata(AVIOContext **s, const char *filename, int fla
     if (ret != 0 && cb != NULL)
     {
         av_free(cb);
+    } else {
+        (*s)->flagOpenWithInterruptData = 1;
     }
     return ret;
 }
