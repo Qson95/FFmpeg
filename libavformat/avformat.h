@@ -2308,6 +2308,9 @@ int av_probe_input_buffer(AVIOContext *pb, AVInputFormat **fmt,
  */
 int avformat_open_input(AVFormatContext **ps, const char *url, AVInputFormat *fmt, AVDictionary **options);
 
+int avformat_open_input_with_interrupt(AVFormatContext **ps, const char *filename,
+                        AVInputFormat *fmt, const AVIOInterruptData *interruptData, AVDictionary **options);
+
 attribute_deprecated
 int av_demuxer_open(AVFormatContext *ic);
 

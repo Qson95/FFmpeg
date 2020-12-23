@@ -544,9 +544,9 @@ static int callbackInterrupt(void *data)
         if (timeNow > lastTimestamp && timeNow - lastTimestamp > 30) // 30s
         {
             if (interruptData->streamName != NULL) {
-                av_log(NULL, AV_LOG_ERROR, "Live stream %s hang force close\n", interruptData->streamName);
+                av_log(NULL, AV_LOG_ERROR, "Input stream %s hang force close\n", interruptData->streamName);
             } else {
-                av_log(NULL, AV_LOG_ERROR, "Live stream hang force close\n");
+                av_log(NULL, AV_LOG_ERROR, "Input stream hang force close\n");
             }
             return 1;
         }
@@ -580,6 +580,7 @@ int avformat_open_input_with_interrupt(AVFormatContext **ps, const char *filenam
         s->interrupt_callback = *cb;
         s->interruptCallback = cb;
         s->flagOpenWithInterruptData = 1;
+        av_log(NULL, AV_LOG_INFO, "Setup interrup callback avformat_open_input_with_interrupt done\n");
     }
     else
     {
