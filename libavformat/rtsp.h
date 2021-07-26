@@ -407,6 +407,11 @@ typedef struct RTSPState {
      */
     char *user_agent;
 
+    /**
+     * RANGE HEADER string
+     */
+    char *range_header;
+
     char default_lang[4];
     int buffer_size;
 } RTSPState;

@@ -543,11 +543,17 @@ static int rtsp_read_play(AVFormatContext *s)
         if (rt->state == RTSP_STATE_PAUSED) {
             cmd[0] = 0;
         } else {
-            snprintf(cmd, sizeof(cmd),
+            if (rt->range_header != NULL && strlen(rt->range_header) > 0) {
+                av_log(s, AV_LOG_VERBOSE, "PLAY: rtsp_read_seek: %s\n", rt->range_header);
+                snprintf(cmd, sizeof(cmd), "Range: %s\r\n", rt->range_header);
+            } else {
+                snprintf(cmd, sizeof(cmd),
                      "Range: npt=%"PRId64".%03"PRId64"-\r\n",
                      rt->seek_timestamp / AV_TIME_BASE,
                      rt->seek_timestamp / (AV_TIME_BASE / 1000) % 1000);
+            }
         }
+        av_log(s, AV_LOG_VERBOSE, "PLAY: rtsp_read_seek: %s\n", cmd);
         ff_rtsp_send_cmd(s, "PLAY", rt->control_uri, cmd, reply, NULL);
         if (reply->status_code != RTSP_STATUS_OK) {
             return ff_rtsp_averror(reply->status_code, -1);
