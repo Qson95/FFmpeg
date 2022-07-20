@@ -1721,6 +1721,12 @@ static int FUNC(frame_header_obu)(CodedBitstreamContext *ctx, RWContext *rw,
         start_pos = put_bits_count(rw);
 #endif
 
+#ifdef READ
+        start_pos = get_bits_count(rw);
+#else
+        start_pos = put_bits_count(rw);
+#endif
+
         CHECK(FUNC(uncompressed_header)(ctx, rw, current));
 
         priv->tile_num = 0;

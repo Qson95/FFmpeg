@@ -123,17 +123,7 @@ read_header:
         if (ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE))
             return ret;
     }
-
-    if (s->interlaced) {
-        s->bottom_field ^= 1;
-        /* if not bottom field, do not output image yet */
-        if (s->bottom_field != s->interlace_polarity && second_field_offs) {
             buf_ptr = buf + second_field_offs;
-            goto read_header;
-        }
-    }
-
-    //XXX FIXME factorize, this looks very similar to the EOI code
 
     if(!s->got_picture) {
         av_log(avctx, AV_LOG_WARNING, "no picture\n");

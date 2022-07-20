@@ -1513,6 +1513,10 @@ typedef struct AVFormatContext {
      */
     AVIOInterruptCB interrupt_callback;
 
+    // save interrupt callback for free
+    AVIOInterruptCB *interruptCallback;
+    int flagOpenWithInterruptData;
+
     /**
      * Flags to enable debugging.
      */
@@ -2224,6 +2228,8 @@ int av_probe_input_buffer(AVIOContext *pb, ff_const59 AVInputFormat **fmt,
  * @note If you want to use custom IO, preallocate the format context and set its pb field.
  */
 int avformat_open_input(AVFormatContext **ps, const char *url, ff_const59 AVInputFormat *fmt, AVDictionary **options);
+int avformat_open_input_with_interrupt(AVFormatContext **ps, const char *filename,
+                        AVInputFormat *fmt, const AVIOInterruptData *interruptData, AVDictionary **options);
 
 #if FF_API_DEMUXER_OPEN
 /**

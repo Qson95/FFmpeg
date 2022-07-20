@@ -60,6 +60,12 @@ typedef struct AVIOInterruptCB {
     void *opaque;
 } AVIOInterruptCB;
 
+typedef struct AVIOInterruptData {
+    unsigned int lastTimestamp;
+    char *streamName;
+} AVIOInterruptData;
+
+
 /**
  * Directory entry types.
  */
@@ -349,6 +355,10 @@ typedef struct AVIOContext {
      * Try to buffer at least this amount of data before flushing it
      */
     int min_packet_size;
+
+    // save interrupt callback for free
+    AVIOInterruptCB *interruptCallback;
+    int flagOpenWithInterruptData;
 } AVIOContext;
 
 /**
@@ -736,6 +746,11 @@ int avio_open(AVIOContext **s, const char *url, int flags);
  */
 int avio_open2(AVIOContext **s, const char *url, int flags,
                const AVIOInterruptCB *int_cb, AVDictionary **options);
+
+
+// open io with io interrupt data
+int avio_open2_with_interruptdata(AVIOContext **s, const char *filename, int flags,
+               const AVIOInterruptData *interruptData, AVDictionary **options);
 
 /**
  * Close the resource accessed by the AVIOContext s and free it.

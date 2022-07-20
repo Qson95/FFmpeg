@@ -547,6 +547,12 @@ redo:
     } else if (m->imkh_cctv && es_type == 0x91) {
         codec_id = AV_CODEC_ID_PCM_MULAW;
         type     = AVMEDIA_TYPE_AUDIO;
+    } else if (es_type == 0x91) {
+        codec_id = AV_CODEC_ID_PCM_MULAW;
+        type     = AVMEDIA_TYPE_AUDIO;
+    } else if(es_type == 0x90){
+        codec_id = AV_CODEC_ID_PCM_ALAW;
+        type = AVMEDIA_TYPE_AUDIO;
     } else if (startcode >= 0x1e0 && startcode <= 0x1ef) {
         static const unsigned char avs_seqh[4] = { 0, 0, 1, 0xb0 };
         unsigned char buf[8];

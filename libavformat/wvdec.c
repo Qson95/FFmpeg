@@ -99,6 +99,11 @@ static int wv_read_block_header(AVFormatContext *ctx, AVIOContext *pb)
         return ret;
     }
 
+    if (wc->header.flags & WV_DSD) {
+        avpriv_report_missing_feature(ctx, "WV DSD");
+        return AVERROR_PATCHWELCOME;
+    }
+
     if (wc->header.version < 0x402 || wc->header.version > 0x410) {
         avpriv_report_missing_feature(ctx, "WV version 0x%03X",
                                       wc->header.version);
